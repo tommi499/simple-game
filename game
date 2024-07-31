@@ -1,0 +1,137 @@
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// Player settings
+const player = {
+    x: canvas.width / 2,
+    y: canvas.height - 30,
+    width: 20,
+    height: 20,
+    color: 'lime',
+    speed: 5,
+    dx: 0,
+    dy: 0
+};
+
+// Bullet settings
+const bullets = [];
+const bulletSpeed = 7;
+
+// Enemy settings
+const enemies = [];
+const enemySpeed = 2;
+const enemySpawnRate = 2000; // milliseconds
+let lastEnemySpawn = 0;
+
+// Controls
+document.addEventListener('keydown', keyDown);
+document.addEventListener('keyup', keyUp);
+
+function keyDown(e) {
+    if (e.key === 'ArrowRight' || e.key === 'd') {
+        player.dx = player.speed;
+    } else if (e.key === 'ArrowLeft' || e.key === 'a') {
+        player.dx = -player.speed;
+    }
+    if (e.key === ' ') {
+        shoot();
+    }
+}
+
+function keyUp(e) {
+    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'ArrowLeft' || e.key === 'a') {
+        player.dx = 0;
+    }
+}
+
+function shoot() {
+    bullets.push({
+        x: player.x + player.width / 2,
+        y: player.y,
+        width: 5,
+        height: 10,
+        color: 'red'
+    });
+}
+
+function spawnEnemy() {
+    enemies.push({
+        x: Math.random() * (canvas.width - 20),
+        y: 0,
+        width: 20,
+        height: 20,
+        color: 'blue'
+    });
+}
+
+function update() {
+    player.x += player.dx;
+    if (player.x < 0) player.x = 0;
+    if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+
+    bullets.forEach((bullet, index) => {
+        bullet.y -= bulletSpeed;
+        if (bullet.y < 0) {
+            bullets.splice(index, 1);
+        }
+    });
+
+    enemies.forEach((enemy, index) => {
+        enemy.y += enemySpeed;
+        if (enemy.y + enemy.height > canvas.height) {
+            enemies.splice(index, 1);
+        }
+    });
+
+    bullets.forEach((bullet, bulletIndex) => {
+        enemies.forEach((enemy, enemyIndex) => {
+            if (
+                bullet.x < enemy.x + enemy.width &&
+                bullet.x + bullet.width > enemy.x &&
+                bullet.y < enemy.y + enemy.height &&
+                bullet.y + bullet.height > enemy.y
+            ) {
+                bullets.splice(bulletIndex, 1);
+                enemies.splice(enemyIndex, 1);
+            }
+        });
+    });
+}
+
+function drawPlayer() {
+    ctx.fillStyle = player.color;
+    ctx.fillRect(player.x, player.y, player.width, player.height);
+}
+
+function drawBullets() {
+    bullets.forEach(bullet => {
+        ctx.fillStyle = bullet.color;
+        ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+    });
+}
+
+function drawEnemies() {
+    enemies.forEach(enemy => {
+        ctx.fillStyle = enemy.color;
+        ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+    });
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawPlayer();
+    drawBullets();
+    drawEnemies();
+}
+
+function loop(timestamp) {
+    update();
+    draw();
+    if (timestamp - lastEnemySpawn > enemySpawnRate) {
+        spawnEnemy();
+        lastEnemySpawn = timestamp;
+    }
+    requestAnimationFrame(loop);
+}
+
+requestAnimationFrame(loop);
